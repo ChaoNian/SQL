@@ -53,7 +53,6 @@ WHERE id = 1;   -- 语句以分号结束
 
 - `CREATE DATABASE` / `USE` / `DROP DATABASE`  
 - `CREATE TABLE`：列名、类型、可空  
-- 常用类型速览：整数、`DECIMAL`、字符串、`DATE`/`DATETIME`、`BOOLEAN`  
 - `ALTER TABLE`、`DROP TABLE`（慎用）
 - 查询
   - 查询所有数据库： SHOW DATABASES；
@@ -65,7 +64,149 @@ WHERE id = 1;   -- 语句以分号结束
 - 使用
   - USE 数据库名
 
+#### 常用数据类型
 
+入门优先记：`INT`、`DECIMAL`、`VARCHAR`、`DATE` / `DATETIME`、`BOOLEAN`。
+
+**1. 数值型**
+
+| 类型 | 说明 |
+|------|------|
+| `TINYINT` / `SMALLINT` / `INT` / `BIGINT` | 整数，范围从小到大 |
+| `DECIMAL(M,D)` | 精确小数，适合金额 |
+| `FLOAT` / `DOUBLE` | 浮点数，有精度误差，金额慎用 |
+
+**2. 字符串型**
+
+| 类型 | 说明 |
+|------|------|
+| `CHAR(n)` | 定长，不足补空格 |
+| `VARCHAR(n)` | 变长，最常用 |
+| `TEXT` / `BLOB` | 大文本 / 二进制 |
+
+**3. 日期时间型**
+
+| 类型 | 说明 |
+|------|------|
+| `DATE` | 日期，如 `2026-11-10` |
+| `TIME` | 时间 |
+| `DATETIME` | 日期 + 时间 |
+| `TIMESTAMP` | 时间戳（受时区影响） |
+
+**4. 布尔型**
+
+| 类型 | 说明 |
+|------|------|
+| `BOOLEAN` / `BOOL` | 实质是 `TINYINT(1)`，`0` 假、`1` 真 |
+
+建表示例：
+
+```sql
+CREATE TABLE student (
+  id INT,
+  name VARCHAR(50),
+  score DECIMAL(5,2),
+  birthday DATE,
+  created_at DATETIME,
+  is_active BOOLEAN
+);
+```
+```sql
+show databases;
+CREATE DATABASE IF NOT EXISTS ittest;
+USE ittest;
+
+CREATE TABLE emp (
+  id INT COMMENT '编号',
+  workno VARCHAR(10) COMMENT '工号',
+  name VARCHAR(10) COMMENT '姓名',
+  gender CHAR(1) COMMENT '性别',
+  age TINYINT UNSIGNED COMMENT '年龄',
+  idcard CHAR(18) COMMENT '身份证',
+  entrydate DATE COMMENT '入职时间'
+) COMMENT '员工表';
+
+-- 查看表结构
+DESC emp;
+
+-- 查看当前库
+SELECT DATABASE();
+```
+
+查看表结构结果：
+
+![查看表结构](./image2-1.png)
+
+查看当前库结果：
+
+![查看当前库](./image2-2.png)
+
+#### DDL · 表操作 · 修改
+
+**添加字段**
+
+```sql
+ALTER TABLE 表名 ADD 字段名 类型(长度) [COMMENT 注释] [约束];
+
+-- 示例
+ALTER TABLE emp ADD nickname VARCHAR(20) COMMENT '昵称';
+```
+
+**修改数据类型**
+
+```sql
+ALTER TABLE 表名 MODIFY 字段名 新数据类型(长度);
+```
+
+**修改字段名和字段类型**
+
+```sql
+ALTER TABLE 表名 CHANGE 旧字段名 新字段名 类型(长度) [COMMENT 注释] [约束];
+
+-- 示例
+ALTER TABLE emp CHANGE nickname username VARCHAR(30) COMMENT '用户名';
+```
+
+![修改字段名](./image2-3.png)
+
+**删除字段**
+
+```sql
+ALTER TABLE 表名 DROP 字段名;
+
+-- 示例
+ALTER TABLE emp DROP username;
+```
+
+![删除字段](./image2-4.png)
+
+**修改表名**
+
+```sql
+ALTER TABLE 表名 RENAME TO 新表名;
+
+-- 示例
+ALTER TABLE emp RENAME TO employee;
+
+-- 查看表
+SHOW TABLES;
+```
+
+#### DDL · 表操作 · 删除
+
+**删除表**
+
+```sql
+DROP TABLE [IF EXISTS] 表名;
+```
+
+**清空表（删除数据后重建空表）**
+
+```sql
+TRUNCATE TABLE 表名;
+```
+
+> 注意：删除 / 清空表时，表中的全部数据也会被删除。
 
 ### 2. 插入、更新、删除（DML）
 
