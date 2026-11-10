@@ -1,3 +1,5 @@
+
+
 # 02 · SQL
 
 ## 目标
@@ -6,10 +8,10 @@
 
 ## SQL 通用语法
 
-1. SQL 语句可以单行或多行书写，**以分号 `;` 结尾**  
-2. 可以使用空格 / 缩进增强可读性  
-3. MySQL 的 SQL **不区分大小写**；关键字建议使用大写（如 `SELECT`、`FROM`）  
-4. 注释：  
+1. SQL 语句可以单行或多行书写，**以分号** `;` **结尾**
+2. 可以使用空格 / 缩进增强可读性
+3. MySQL 的 SQL **不区分大小写**；关键字建议使用大写（如 `SELECT`、`FROM`）
+4. 注释：
    - 单行注释：`-- 注释内容` 或 `# 注释内容`（`#` 为 MySQL 特有）  
    - 多行注释：`/* 注释内容 */`
 
@@ -53,6 +55,17 @@ WHERE id = 1;   -- 语句以分号结束
 - `CREATE TABLE`：列名、类型、可空  
 - 常用类型速览：整数、`DECIMAL`、字符串、`DATE`/`DATETIME`、`BOOLEAN`  
 - `ALTER TABLE`、`DROP TABLE`（慎用）
+- 查询
+  - 查询所有数据库： SHOW DATABASES；
+  - 查询当前数据库： SELECT DATABASES();
+- 创建
+  - CREATE DATABASES [IF NOT EXSTS] 数据库名 [DEFAULT CHARSET 字符集] [COLLATE 排序规则]
+- 删除 
+  - DROP DATABASES [IF EXISTS] 数据库名
+- 使用
+  - USE 数据库名
+
+
 
 ### 2. 插入、更新、删除（DML）
 
@@ -108,4 +121,4 @@ HAVING COUNT(*) >= 1;
 - `DELETE` 无 `WHERE` 会清空表；生产需权限与备份意识  
 - `WHERE` 里对列使用函数可能导致无法走索引（概念级）  
 - `NULL` 不能用 `=` / `!=` 判断，用 `IS NULL` / `IS NOT NULL`  
-- `LIMIT` 深分页性能问题（点到为止，细节留进阶）  
+- `LIMIT` 深分页性能问题（点到为止，细节留进阶）
