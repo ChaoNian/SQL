@@ -240,14 +240,110 @@ VALUES (值1, 值2, ...), (值1, 值2, ...), (值1, 值2, ...);
 - 字符串和日期数据应放在引号中
 - 插入的数据大小应在字段规定范围内
 
-- `UPDATE ... SET ... WHERE`（强调 WHERE）  
-- `DELETE FROM ... WHERE` vs `TRUNCATE`（概念对比）
+**修改数据**
+
+```sql
+UPDATE 表名 SET 字段名1 = 值1, 字段名2 = 值2, ... [WHERE 条件];
+```
+
+注意：
+
+- `WHERE` 条件可有可无；没有条件时会修改整张表的所有数据
+
+**删除数据**
+
+```sql
+DELETE FROM 表名 [WHERE 条件];
+```
+
+注意：
+
+- `WHERE` 条件可有可无；没有条件时会删除整张表的所有数据
+- `DELETE` 不能删除某一个字段的值（可用 `UPDATE` 将该字段设为 `NULL`）
+- 对比：`DELETE` 删数据，`TRUNCATE` 清空并重建空表（见上文 DDL）
 
 ### 3. 条件查询（DQL 基础）
 
-- `SELECT` 列、别名、`DISTINCT`  
-- `WHERE`：比较、`AND`/`OR`、`IN`、`BETWEEN`、`LIKE`、`IS NULL`  
-- `ORDER BY`、`LIMIT`（及 MySQL 中 `LIMIT offset, count`）
+DQL（Data Query Language，数据查询语言）用来查询表中的记录，实际工作中使用频率高。核心关键字：`SELECT`。
+
+**语法**
+
+```sql
+SELECT 字段列表
+FROM 表名列表
+WHERE 条件列表
+GROUP BY 分组字段列表
+HAVING 分组后条件列表
+ORDER BY 排序字段列表
+LIMIT 分页参数;
+```
+
+查询分为：基本查询、条件查询（`WHERE`）、聚合查询、分组查询（`GROUP BY`）、排序查询（`ORDER BY`）、分页查询（`LIMIT`）。
+
+#### 基本查询
+
+**查询字段**
+
+```sql
+SELECT 字段1, 字段2, 字段3, ... FROM 表名;
+SELECT age FROM employee;
+SELECT * FROM 表名;   -- 查询全部列
+```
+
+**设置别名**
+
+```sql
+SELECT 字段1 [AS 别名1], 字段2 [别名2], ... FROM 表名;
+SELECT age AS '年龄' FROM employee;
+```
+
+**去除重复记录**
+
+```sql
+SELECT DISTINCT 字段列表 FROM 表名;
+SELECT DISTINCT age AS '年龄' FROM employee;
+```
+
+#### 条件查询（WHERE）
+
+```sql
+SELECT 字段列表 FROM 表名 WHERE 条件列表;
+```
+
+**比较运算符**
+
+| 运算符 | 功能 |
+|--------|------|
+| `>` | 大于 |
+| `>=` | 大于等于 |
+| `<` | 小于 |
+| `<=` | 小于等于 |
+| `=` | 等于 |
+| `<>` 或 `!=` | 不等于 |
+| `BETWEEN ... AND ...` | 在某个范围内（含最小、最大值） |
+| `IN (...)` | 在列表中多选一 |
+| `LIKE` | 模糊匹配 |
+| `IS NULL` | 是 `NULL` |
+
+`LIKE` 占位符：
+
+- `_`：匹配单个字符（如查 3 个字：`LIKE '___'`）
+- `%`：匹配任意个字符（如以 X 结尾：`LIKE '%X'`）
+
+**逻辑运算符**
+
+| 运算符 | 功能 |
+|--------|------|
+| `AND` 或 `&&` | 并且（多个条件同时成立） |
+| `OR` 或 `\|\|` | 或者（多个条件任一成立） |
+| `NOT` 或 `!` | 非，取反 |
+
+#### 其他查询类型（大纲）
+
+- 聚合查询：`COUNT` / `MAX` / `MIN` / `AVG` / `SUM`（见下节）
+- 分组查询：`GROUP BY`
+- 排序查询：`ORDER BY`
+- 分页查询：`LIMIT`（MySQL：`LIMIT offset, count`）
 
 ### 4. 分组与聚合
 
