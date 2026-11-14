@@ -1,5 +1,3 @@
-
-
 # 02 · SQL
 
 ## 目标
@@ -43,7 +41,7 @@ WHERE id = 1;   -- 语句以分号结束
 - **DDL**：`CREATE` / `ALTER` / `DROP`  
 - **DML**：`INSERT` / `UPDATE` / `DELETE`  
 - **DQL**：`SELECT`  
-- **DCL**：`GRANT` / `REVOKE`（本章以 DDL/DML/DQL 为主）
+- **DCL**：管理用户、`GRANT` / `REVOKE`（见后文「DCL · 管理用户」）
 
 > 另有 **TCL**（事务控制：`COMMIT` / `ROLLBACK`），见 [06-事务](./06-事务.md)。
 
@@ -111,6 +109,7 @@ CREATE TABLE student (
   is_active BOOLEAN
 );
 ```
+
 ```sql
 show databases;
 CREATE DATABASE IF NOT EXISTS ittest;
@@ -278,6 +277,34 @@ ORDER BY 排序字段列表
 LIMIT 分页参数;
 ```
 
+![DQL 语句结构](./image2-6.png)
+
+| 子句 | 参数 | 说明 |
+|------|------|------|
+| `SELECT` | 字段列表 | 字段名 `[AS]` 别名 |
+| `FROM` | 表名 | 查询的数据来源 |
+| `WHERE` | 条件列表 | 比较：`>` `>=` `<` `<=` `=` `<>` `LIKE` `BETWEEN ... AND` `IN`；逻辑：`AND` `OR`；**分组之前过滤** |
+| `GROUP BY` | 分组字段列表 | 按指定字段分组 |
+| `HAVING` | 分组后条件列表 | **分组之后过滤** |
+| `ORDER BY` | 排序字段列表 | 升序 `ASC`，降序 `DESC` |
+| `LIMIT` | 分页参数 | 起始索引（从 `0` 开始），每页展示记录数 |
+
+#### DQL 执行顺序
+
+编写顺序 ≠ 执行顺序：写的时候 `SELECT` 在最前，真正执行时 `FROM` 最先、`SELECT` 较后、`LIMIT` 最后。
+
+![DQL 执行顺序](./image2-5.png)
+
+| 步骤 | 编写顺序 | 执行顺序 |
+|------|----------|----------|
+| 1 | `SELECT` 字段列表 | `FROM` 表名列表 |
+| 2 | `FROM` 表名列表 | `WHERE` 条件列表 |
+| 3 | `WHERE` 条件列表 | `GROUP BY` 分组字段列表 |
+| 4 | `GROUP BY` 分组字段列表 | `HAVING` 分组后条件列表 |
+| 5 | `HAVING` 分组后条件列表 | `SELECT` 字段列表 |
+| 6 | `ORDER BY` 排序字段列表 | `ORDER BY` 排序字段列表 |
+| 7 | `LIMIT` 分页参数 | `LIMIT` 分页参数 |
+
 查询分为：基本查询、条件查询（`WHERE`）、聚合查询、分组查询（`GROUP BY`）、排序查询（`ORDER BY`）、分页查询（`LIMIT`）。
 
 #### 基本查询
@@ -338,18 +365,162 @@ SELECT 字段列表 FROM 表名 WHERE 条件列表;
 | `OR` 或 `\|\|` | 或者（多个条件任一成立） |
 | `NOT` 或 `!` | 非，取反 |
 
-#### 其他查询类型（大纲）
+#### 其他查询类型
 
-- 聚合查询：`COUNT` / `MAX` / `MIN` / `AVG` / `SUM`（见下节）
-- 分组查询：`GROUP BY`
-- 排序查询：`ORDER BY`
-- 分页查询：`LIMIT`（MySQL：`LIMIT offset, count`）
+- 聚合 / 分组：见下节
+
+#### 排序查询（ORDER BY）
+
+**语法**
+
+```sql
+SELECT 字段列表 FROM 表名 ORDER BY 字段1 排序方式1, 字段2 排序方式2;
+```
+
+排序方式：`ASC` 升序（默认）、`DESC` 降序。
+
+注意：多字段排序时，仅当第一个字段值相同时，才按第二个字段排序。
+
+**示例**
+
+```sql
+-- 1. 按年龄升序 / 降序（不写 ASC/DESC 时默认升序）
+SELECT * FROM emp ORDER BY age ASC;
+SELECT * FROM emp ORDER BY age DESC;
+SELECT * FROM emp ORDER BY age;
+
+-- 2. 先按年龄升序，年龄相同再按入职时间降序 / 升序
+SELECT * FROM emp ORDER BY age ASC, entrydate DESC;
+SELECT * FROM emp ORDER BY age ASC, entrydate ASC;
+```
+
+#### 分页查询（LIMIT）
+
+**语法**
+
+```sql
+SELECT 字段列表 FROM 表名 LIMIT 起始索引, 查询记录数;
+```
+
+注意：
+
+- 起始索引从 `0` 开始；公式：`起始索引 = (页码 - 1) * 每页记录数`
+- 分页是数据库方言，MySQL 使用 `LIMIT`
+- 查第一页时可省略起始索引，简写为 `LIMIT 10`
+
+**示例**
+
+```sql
+-- 1. 第 1 页，每页 10 条
+SELECT * FROM emp LIMIT 0, 10;
+SELECT * FROM emp LIMIT 10;   -- 等价简写
+
+-- 2. 第 2 页，每页 10 条（起始索引 = 1 * 10 = 10）
+SELECT * FROM emp LIMIT 10, 10;
+```
 
 ### 4. 分组与聚合
 
-- `COUNT` / `SUM` / `AVG` / `MAX` / `MIN`  
-- `GROUP BY`  
-- `HAVING` vs `WHERE`（过滤时机）
+#### 聚合查询
+
+将一列数据作为一个整体，进行纵向计算。
+
+**语法**
+
+```sql
+SELECT 聚合函数(字段) FROM 表名;
+```
+
+| 函数      | 功能   | 示例                                                   |
+| ------- | ---- | ---------------------------------------------------- |
+| `COUNT` | 统计数量 | `SELECT COUNT(idcard) FROM emp; 统计改企业员工数量`           |
+| `MAX`   | 最大值  | `SELECT MAX(age) FROM emp;该企业最大年龄`                   |
+| `MIN`   | 最小值  | `SELECT MIN(age) FROM emp;`                          |
+| `AVG`   | 平均值  | `SELECT AVG(age) FROM emp; 统计平均年龄`                   |
+| `SUM`   | 求和   | `SELECT SUM(age) FROM emp WHERE workaddress = '西安';` |
+
+#### 分组查询（GROUP BY）
+
+**语法**
+
+```sql
+SELECT 字段列表
+FROM 表名
+[WHERE 条件]
+GROUP BY 分组字段名
+[HAVING 分组后过滤条件];
+```
+
+**示例**
+
+```sql
+-- 1. 按性别分组，统计男女员工数量
+SELECT gender, COUNT(*) FROM emp GROUP BY gender;
+
+-- 2. 按性别分组，统计男女员工平均年龄
+SELECT gender, AVG(age) FROM emp GROUP BY gender;
+
+-- 3. 年龄 < 45，按工作地址分组，取员工数 >= 3 的地址
+SELECT workaddress, COUNT(*)
+FROM emp
+WHERE age < 45
+GROUP BY workaddress
+HAVING COUNT(*) >= 3;
+```
+
+`WHERE` **与** `HAVING` **区别**
+
+| 对比点 | `WHERE` | `HAVING` |
+|--------|---------|----------|
+| 执行时机 | 分组**之前**过滤，不满足条件不参与分组 | 分组**之后**对结果过滤 |
+| 判断条件 | **不能**对聚合函数判断 | **可以**对聚合函数判断 |
+
+注意：
+
+- 执行顺序：`WHERE` → 聚合函数 → `HAVING`
+- 分组后，查询字段一般只写**聚合函数**和**分组字段**；查其他字段通常无意义
+
+#### SQL 练习
+
+**1. 查询年龄为 20、21、22、23 岁的女性员工信息**
+
+```sql
+SELECT * FROM emp WHERE gender = '女' AND age IN (20, 21, 22, 23);
+```
+
+**2. 查询性别为男，且年龄在 20–40 岁（含）以内、姓名为三个字的员工**
+
+```sql
+SELECT * FROM emp
+WHERE gender = '男'
+  AND age BETWEEN 20 AND 40
+  AND name LIKE '___';
+```
+
+**3. 统计年龄小于 60 岁的男性员工和女性员工人数**
+
+```sql
+SELECT gender, COUNT(*) FROM emp WHERE age < 60 GROUP BY gender;
+```
+
+**4. 查询年龄 ≤ 35 岁员工的姓名和年龄；按年龄升序，年龄相同按入职时间降序**
+
+```sql
+SELECT name, age
+FROM emp
+WHERE age <= 35
+ORDER BY age ASC, entrydate DESC;
+```
+
+**5. 查询性别为男、年龄在 20–40 岁（含）以内的前 5 名员工；按年龄升序，年龄相同按入职时间升序**
+
+```sql
+SELECT *
+FROM emp
+WHERE gender = '男' AND age BETWEEN 20 AND 40
+ORDER BY age ASC, entrydate ASC
+LIMIT 5;
+```
 
 ### 5. 基础子查询
 
@@ -359,6 +530,147 @@ SELECT 字段列表 FROM 表名 WHERE 条件列表;
 ### 6. CRUD 闭环
 
 - 在业务表上走通：查 → 增 → 改 → 再查 → 删（或事务内回滚）
+
+### 7. DCL · 管理用户
+
+DCL 全称 **Data Control Language**（数据控制语言），用来管理数据库用户、控制访问权限。
+
+#### 用户管理 vs 权限管理
+
+三者关系：**DCL 是大类，用户管理管「人」，权限管理管「能干什么」**。
+
+| 概念 | 管什么 | 典型语句 |
+|------|--------|----------|
+| **DCL** | 数据控制语言这一整类 | 用户 + 权限相关语句都属 DCL |
+| **用户管理** | 账号本身：有没有这个用户、密码、从哪台主机登录 | `CREATE USER` / `ALTER USER` / `DROP USER` |
+| **权限管理** | 这个用户对库 / 表能做什么 | `GRANT` / `REVOKE` / `SHOW GRANTS` |
+
+流程：先 `CREATE USER` 建用户 → 再 `GRANT` 赋权 → 用 `SHOW GRANTS` 核对。只有用户、没有授权时，通常几乎什么都不能做；删用户会一并带走其权限。
+
+一句话：**先建用户，再赋权；用户是身份，权限是能力。**
+
+#### 查看用户
+
+用户信息保存在系统库 `mysql` 的 `user` 表中：
+
+```sql
+USE mysql;
+SELECT * FROM user;
+```
+
+#### 创建用户
+
+```sql
+CREATE USER '用户名'@'主机名' IDENTIFIED BY '密码';
+```
+
+- 主机名 `localhost`：仅本机可访问  
+- 主机名 `%`：任意主机可访问  
+
+#### 修改用户密码
+
+```sql
+ALTER USER '用户名'@'主机名' IDENTIFIED WITH mysql_native_password BY '新密码';
+```
+
+#### 删除用户
+
+```sql
+DROP USER '用户名'@'主机名';
+```
+
+#### 案例
+
+```sql
+-- 1. 创建用户 itcast，仅 localhost 可访问，密码 123456
+CREATE USER 'itcast'@'localhost' IDENTIFIED BY '123456';
+
+-- 2. 创建用户 heima，任意主机可访问，密码 123456
+CREATE USER 'heima'@'%' IDENTIFIED BY '123456';
+
+-- 3. 修改 heima 的密码为 1234
+ALTER USER 'heima'@'%' IDENTIFIED WITH mysql_native_password BY '1234';
+
+-- 4. 删除 itcast@localhost
+DROP USER 'itcast'@'localhost';
+```
+
+#### 权限控制
+
+MySQL 中定义了很多种权限，常用的如下：
+
+![DCL 权限控制](./image2-7.png)
+
+| 权限 | 说明 |
+|------|------|
+| `ALL` / `ALL PRIVILEGES` | 所有权限 |
+| `SELECT` | 查询数据 |
+| `INSERT` | 插入数据 |
+| `UPDATE` | 修改数据 |
+| `DELETE` | 删除数据 |
+| `ALTER` | 修改表 |
+| `DROP` | 删除数据库 / 表 / 视图 |
+| `CREATE` | 创建数据库 / 表 |
+
+**查询权限**
+
+```sql
+SHOW GRANTS FOR '用户名'@'主机名';
+```
+
+**授予权限**
+
+```sql
+GRANT 权限列表 ON 数据库名.表名 TO '用户名'@'主机名';
+```
+
+**撤销权限**
+
+```sql
+REVOKE 权限列表 ON 数据库名.表名 FROM '用户名'@'主机名';
+```
+
+注意：
+
+- 多个权限之间用逗号分隔
+- 授权时，数据库名和表名可用 `*` 通配，表示所有
+
+**案例**
+
+```sql
+-- 查询 heima 的权限
+SHOW GRANTS FOR 'heima'@'%';
+
+-- 授予权限：itcast 库下所有表的全部权限
+GRANT ALL ON itcast.* TO 'heima'@'%';
+
+-- 撤销权限
+REVOKE ALL ON itcast.* FROM 'heima'@'%';
+```
+
+#### 实践中怎么用
+
+实践里很少天天手写 `CREATE USER` / `GRANT`，但思路必须会：
+
+- **开发本机**：多用 `root` 或一个本地开发账号，方便学习、调试。
+- **测试 / 生产**：一人一号或一服务一号，遵循**最小权限**——应用账号通常只有业务库的 `SELECT` / `INSERT` / `UPDATE` / `DELETE`，没有 `DROP`、`CREATE USER`。
+- **运维 / DBA**：才管建用户、改密、授权、回收；开发一般提工单，不直接动生产账号。
+
+| 角色 | 常见权限 |
+|------|----------|
+| 应用服务账号 | 业务库读写（甚至只读从库） |
+| 数据分析 / 报表 | 多为 `SELECT` |
+| 运维 / DBA | 更高权限，甚至接近 `ALL` |
+| 只读排查账号 | 仅 `SELECT`，避免误改数据 |
+
+实操习惯：
+
+1. 先 `CREATE USER`，再 `GRANT`，用 `SHOW GRANTS` 核对  
+2. 生产偏好 `'user'@'具体IP或网段'`，少用 `'%'`（任意主机风险大）  
+3. 离职、下线服务时 `REVOKE` 或 `DROP USER`，避免账号残留  
+4. 密码、权限变更走流程；应用连库用配置中心 / 密钥，不写死在代码里  
+
+学习阶段：在本机用 `itcast` / `heima` 练建用户、授权、查权限即可；真正上线时按上面最小权限来。
 
 ## 示例（占位 · 依赖 demo）
 
@@ -378,9 +690,11 @@ HAVING COUNT(*) >= 1;
 ## 小结
 
 - 语句以 `;` 结束；关键字建议大写；善用注释与缩进  
-- DDL 管结构，DML 管数据，DQL 管查询，DCL 管权限  
+- DDL 管结构，DML 管数据，DQL 管查询，DCL 管用户与权限  
 - 改删必须带好 `WHERE`；分组后过滤用 `HAVING`  
-- 子查询先会读、会写简单的，复杂场景多表章再展开
+- 子查询先会读、会写简单的，复杂场景多表章再展开  
+- 用户格式为 `'用户名'@'主机名'`；`localhost` 仅本机，`%` 表示任意主机  
+- 先建用户再赋权；生产遵循最小权限，少用 `'%'`
 
 ## 常见坑 / 面试点
 
